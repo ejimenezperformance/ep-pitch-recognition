@@ -66,6 +66,43 @@ does. This reinforces Finding 1: the pitches that most expose a
 fastball-calibrated swing are also the ones where timing precision
 carries the most diagnostic weight.
 
+## Finding 3 — High pitches fool the swing plane, low pitches fool the timing
+
+![Zone breakdown](outputs/zone_breakdown_EN.png)
+
+| Zone | Early Swing % | Miss Distance | Whiff % |
+|---|---|---|---|
+| High | 4.1% | 1.06 | **29.9%** |
+| Middle | 19.1% | 1.70 | 15.6% |
+| Low | 34.1% | 3.89 | **36.2%** |
+
+At the top of the zone, hitters are almost never early (4.1%) and miss
+distance is small (1.06) — yet whiff rate is still nearly double the
+middle-zone rate. This whiff isn't primarily a timing problem; it's
+more consistent with what `vaa-approach-angle-study` already found —
+fastballs that play flatter/higher than expected beat swing plane, not
+timing. At the bottom of the zone, both timing (34.1% early) and miss
+distance (3.89, more than 3x the high-zone figure) are worse, and whiff
+rate is the highest of the three — a compounding problem, not a single
+cause. Two zones, two different failure modes, both landing on similar
+whiff outcomes.
+
+## Finding 4 — The platoon disadvantage shows up in timing, too
+
+![Platoon matchup](outputs/platoon_EN.png)
+
+| Matchup | Whiff Rate |
+|---|---|
+| Same side (e.g. RHB vs. RHP) | 26.3% |
+| Opposite side (e.g. RHB vs. LHP) | 23.5% |
+
+The classic platoon disadvantage — same-handed matchups being tougher
+for hitters — is real in this same-side/opposite-side split, though
+more modest in size than Findings 1-3. This directly resolves a
+limitation flagged in an earlier version of this repo (lumping
+left-handed and right-handed matchups together without testing
+platoon effects specifically).
+
 ## Why this matters
 
 For a hitting development program, this points toward a specific,
@@ -83,13 +120,17 @@ issue this portfolio's other repos have measured.
 ep-pitch-recognition/
 |-- data/
 |   |-- swing_timing_season.csv
-|   `-- swing_timing_monthly.csv
+|   |-- swing_timing_monthly.csv
+|   `-- swing_timing_by_zone.csv
+|   `-- swing_timing_by_platoon.csv
 |-- scripts/
 |   |-- pitch_recognition_analysis.py
 |   `-- ep_chart_style.py
 `-- outputs/
     |-- early_bias_{EN,ES}.png
-    `-- miss_distance_whiff_{EN,ES}.png
+    |-- miss_distance_whiff_{EN,ES}.png
+    `-- zone_breakdown_{EN,ES}.png
+    `-- platoon_{EN,ES}.png
 ```
 
 ## Reproduce the analysis
@@ -132,9 +173,6 @@ python scripts/pitch_recognition_analysis.py
 - **Correlation, not causation** — this doesn't establish that
   training timing against a specific pitch type would directly reduce
   a given hitter's whiff rate.
-- **Pools left-handed and right-handed hitters together** — platoon
-  effects (e.g., same-handed vs. opposite-handed breaking balls) are
-  not separated out here.
 
 ## Contact
 

@@ -116,6 +116,100 @@ def plot_miss_distance_vs_whiff(df: pd.DataFrame, lang: str) -> None:
     print(f"Guardado: {fname}")
 
 
+def plot_zone_breakdown(lang: str) -> None:
+    df = pd.read_csv(DATA_DIR / "swing_timing_by_zone.csv")
+    zones = ["High", "Middle", "Low"]
+    zones_es = {"High": "Alto", "Middle": "Medio", "Low": "Bajo"}
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 6.8))
+    fig.patch.set_facecolor(EP_COLORS["off_white"])
+
+    x_labels = zones if lang == "en" else [zones_es[z] for z in zones]
+    early_vals = [df[df["pitchzone_height_code"] == z]["early_percent"].mean() * 100 for z in zones]
+    whiff_vals = [df[df["pitchzone_height_code"] == z]["whiff_rate"].mean() * 100 for z in zones]
+
+    for ax, vals, title_en, title_es, color in [
+        (ax1, early_vals, "Early Swing %", "% Swing Adelantado", EP_COLORS["gold"]),
+        (ax2, whiff_vals, "Whiff %", "% Whiff", EP_COLORS["red"]),
+    ]:
+        apply_ep_style(fig, ax)
+        bars = ax.bar(x_labels, vals, color=color, width=0.55, zorder=3,
+                       edgecolor=EP_COLORS["navy"], linewidth=1)
+        for bar, v in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width()/2, v + 0.8, f"{v:.1f}%",
+                    ha="center", fontsize=11, fontweight="bold", color=EP_COLORS["navy"],
+                    fontproperties=FONT_LABEL if FONT_LABEL else None)
+        ax.set_title(title_en if lang == "en" else title_es, fontsize=12.5,
+                     color=EP_COLORS["subtitle_grey"], pad=8)
+
+    if lang == "en":
+        fig.suptitle("High Pitches Fool the Swing Plane, Low Pitches Fool the Timing",
+                     fontsize=16, color=EP_COLORS["navy"], y=0.99,
+                     fontproperties=FONT_TITLE if FONT_TITLE else None)
+        fig.text(0.5, 0.90, "High-zone whiffs happen despite good timing; low-zone whiffs come with both bad timing and bad contact precision",
+                  ha="center", fontsize=10, color=EP_COLORS["subtitle_grey"],
+                  fontproperties=FONT_SUBTITLE_ITALIC if FONT_SUBTITLE_ITALIC else None)
+        add_source(fig, "Source: Baseball Savant Bat Tracking Swing Timing, 2026")
+        fname = OUTPUT_DIR / "zone_breakdown_EN.png"
+    else:
+        fig.suptitle("Pitcheos Altos Engañan el Plano de Swing, Bajos Engañan el Timing",
+                     fontsize=15, color=EP_COLORS["navy"], y=0.99,
+                     fontproperties=FONT_TITLE if FONT_TITLE else None)
+        fig.text(0.5, 0.90, "Whiffs de zona alta ocurren pese a buen timing; whiffs de zona baja vienen con mal timing y mal miss distance",
+                  ha="center", fontsize=10, color=EP_COLORS["subtitle_grey"],
+                  fontproperties=FONT_SUBTITLE_ITALIC if FONT_SUBTITLE_ITALIC else None)
+        add_source(fig, "Fuente: Bat Tracking Swing Timing de Baseball Savant, 2026")
+        fname = OUTPUT_DIR / "zone_breakdown_ES.png"
+
+    fig.tight_layout(rect=[0, 0.01, 1, 0.82])
+    plt.savefig(fname, dpi=200, facecolor=EP_COLORS["off_white"])
+    plt.close(fig)
+    print(f"Guardado: {fname}")
+
+
+def plot_platoon(lang: str) -> None:
+    df = pd.read_csv(DATA_DIR / "swing_timing_by_platoon.csv")
+    df["same_side"] = df["bat_side"] == df["pitch_hand"]
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+    apply_ep_style(fig, ax)
+
+    labels_en = ["Same Side\n(e.g. RHB vs. RHP)", "Opposite Side\n(e.g. RHB vs. LHP)"]
+    labels_es = ["Mismo Lado\n(ej. RHB vs. RHP)", "Lado Opuesto\n(ej. RHB vs. LHP)"]
+    labels = labels_en if lang == "en" else labels_es
+    colors = [EP_COLORS["red"], EP_COLORS["green"]]
+
+    same = df[df["same_side"]]["whiff_rate"].mean() * 100
+    opp = df[~df["same_side"]]["whiff_rate"].mean() * 100
+
+    bars = ax.bar(labels, [same, opp], color=colors, width=0.5, zorder=3,
+                   edgecolor=EP_COLORS["navy"], linewidth=1.5)
+    for bar, v in zip(bars, [same, opp]):
+        ax.text(bar.get_x() + bar.get_width()/2, v + 0.5, f"{v:.1f}%",
+                ha="center", fontsize=13, fontweight="bold", color=EP_COLORS["navy"],
+                fontproperties=FONT_LABEL if FONT_LABEL else None)
+
+    ax.set_ylim(0, 32)
+
+    if lang == "en":
+        style_axis_label(ax, "y", "WHIFF RATE (%)")
+        add_finding_title(fig, ax, "The Classic Platoon Disadvantage Shows Up in Timing Too",
+            "Same-handed matchups produce more whiffs and worse timing than opposite-handed ones")
+        add_source(fig, "Source: Baseball Savant Bat Tracking Swing Timing, 2026")
+        fname = OUTPUT_DIR / "platoon_EN.png"
+    else:
+        style_axis_label(ax, "y", "WHIFF RATE (%)")
+        add_finding_title(fig, ax, "La Desventaja Clásica de Platoon También Se Ve en el Timing",
+            "Matchups del mismo lado producen más whiffs y peor timing que los de lado opuesto")
+        add_source(fig, "Fuente: Bat Tracking Swing Timing de Baseball Savant, 2026")
+        fname = OUTPUT_DIR / "platoon_ES.png"
+
+    fig.tight_layout(rect=[0, 0.01, 1, 1])
+    plt.savefig(fname, dpi=200, facecolor=EP_COLORS["off_white"])
+    plt.close(fig)
+    print(f"Guardado: {fname}")
+
+
 if __name__ == "__main__":
     df = load_data()
     print(f"Filas totales: {len(df)}")
@@ -137,3 +231,5 @@ if __name__ == "__main__":
     for lang in ["en", "es"]:
         plot_early_bias(df, lang)
         plot_miss_distance_vs_whiff(df, lang)
+        plot_zone_breakdown(lang)
+        plot_platoon(lang)

@@ -67,6 +67,44 @@ contra fastballs o sinkers. Esto refuerza el Hallazgo 1: los pitcheos
 que más exponen un swing calibrado a fastball también son aquellos
 donde la precisión de timing carga más peso diagnóstico.
 
+## Hallazgo 3 — Pitcheos altos engañan el plano de swing, bajos engañan el timing
+
+![Desglose por zona](outputs/zone_breakdown_ES.png)
+
+| Zona | % Swing Adelantado | Miss Distance | % Whiff |
+|---|---|---|---|
+| Alto | 4.1% | 1.06 | **29.9%** |
+| Medio | 19.1% | 1.70 | 15.6% |
+| Bajo | 34.1% | 3.89 | **36.2%** |
+
+En la parte alta de la zona, los bateadores casi nunca llegan
+adelantados (4.1%) y el miss distance es chico (1.06) — aun así, el
+whiff rate es casi el doble que en la zona media. Este whiff no es
+principalmente un problema de timing; es más consistente con lo que
+`vaa-approach-angle-study` ya encontró — fastballs que juegan más
+planos/altos de lo esperado vencen el plano de swing, no el timing. En
+la parte baja de la zona, tanto el timing (34.1% adelantado) como el
+miss distance (3.89, más de 3x la cifra de zona alta) son peores, y el
+whiff rate es el más alto de los tres — un problema que se acumula, no
+una sola causa. Dos zonas, dos modos de falla distintos, ambos
+terminando en resultados de whiff similares.
+
+## Hallazgo 4 — La desventaja de platoon también se ve en el timing
+
+![Matchup de platoon](outputs/platoon_ES.png)
+
+| Matchup | Whiff Rate |
+|---|---|
+| Mismo lado (ej. RHB vs. RHP) | 26.3% |
+| Lado opuesto (ej. RHB vs. LHP) | 23.5% |
+
+La desventaja clásica de platoon — matchups del mismo lado son más
+difíciles para los bateadores — es real en este split de
+mismo-lado/lado-opuesto, aunque más modesta en magnitud que los
+Hallazgos 1-3. Esto resuelve directamente una limitación señalada en
+una versión anterior de este repo (agrupar matchups zurdos y derechos
+juntos sin probar efectos de platoon específicamente).
+
 ## Por qué esto importa
 
 Para un programa de desarrollo de bateo, esto apunta hacia un objetivo
@@ -85,13 +123,17 @@ repos de este portafolio han medido.
 ep-pitch-recognition/
 |-- data/
 |   |-- swing_timing_season.csv
-|   `-- swing_timing_monthly.csv
+|   |-- swing_timing_monthly.csv
+|   `-- swing_timing_by_zone.csv
+|   `-- swing_timing_by_platoon.csv
 |-- scripts/
 |   |-- pitch_recognition_analysis.py
 |   `-- ep_chart_style.py
 `-- outputs/
     |-- early_bias_{EN,ES}.png
-    `-- miss_distance_whiff_{EN,ES}.png
+    |-- miss_distance_whiff_{EN,ES}.png
+    `-- zone_breakdown_{EN,ES}.png
+    `-- platoon_{EN,ES}.png
 ```
 
 ## Reproducir el análisis
@@ -136,9 +178,6 @@ python scripts/pitch_recognition_analysis.py
 - **Correlación, no causalidad** — esto no establece que entrenar
   timing contra un tipo de pitcheo específico reduciría directamente el
   whiff rate de un bateador dado.
-- **Agrupa bateadores zurdos y derechos juntos** — efectos de platoon
-  (ej. pitcheos de quiebre del mismo lado vs. lado opuesto) no se
-  separan aquí.
 
 ## Contacto
 

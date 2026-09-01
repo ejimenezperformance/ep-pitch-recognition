@@ -2,9 +2,15 @@
 
 **A hitter's swing timing is calibrated for fastball velocity by
 default. Across the league in 2026, swings arrive "early" against
-off-speed and breaking pitches at 30-45x the rate they do against
+curveballs and changeups at roughly 13-14x the rate they do against
 fastballs — and the magnitude of that mistiming is a real, moderate
 predictor of whiff rate.**
+
+> **Correction (see bottom of this section):** an earlier version of
+> this README reported a 1.3% fastball early-swing rate across all 7
+> pitch types, sourced from a batter-level export with an actual
+> minimum of 65 swings per batter-pitch-type combo — not the 100
+> stated. Corrected below.
 
 Part of the [Emerson Performance](https://github.com/ejimenezperformance)
 analytics portfolio (EP-TSP framework). This is the first project in
@@ -28,22 +34,22 @@ what was coming?
 
 ![Early bias by pitch type](outputs/early_bias_EN.png)
 
-| Pitch Type | Early Swing Rate |
-|---|---|
-| Fastball | 1.3% |
-| Sinker | 1.8% |
-| Cutter | 12.8% |
-| Slider | 37.2% |
-| Changeup | 43.4% |
-| Sweeper | 45.9% |
-| Curveball | 49.0% |
+| Pitch Type | Early Swing Rate | Batters qualified (100+ swings) |
+|---|---|---|
+| Fastball | 3.3% | 325 |
+| Curveball | 42.3% | 151 |
+| Changeup | 46.4% | 67 |
 
-Against fastballs and sinkers — the fastest, straightest pitches —
-hitters are almost never early; when they miss timing, they're late.
-Against every slower, more deceptive pitch type, that flips
-dramatically: hitters arrive early on roughly 4 in 10 swings. This is
-consistent with hitters' swings defaulting to a fastball-speed timing
-plan, which then arrives too soon when the actual pitch is slower.
+**Why only 3 of 7 pitch types:** with a real 100-swing-per-batter
+minimum enforced against a *single* pitch type in one season, Sinker,
+Cutter, Slider, and Sweeper don't have enough qualifying batters to
+support a reliable league rate — most hitters simply don't see 100+
+of one specific non-fastball, non-breaking pitch type from different
+pitchers in a season. Rather than force those 4 categories in with a
+looser, undocumented threshold, they're excluded here. The 3 remaining
+types still make the core point: hitters are almost never early
+against fastballs; against pitches that require recognizing off-speed,
+they're early on roughly 4 in 10 swings.
 
 ## Finding 2 — Off-speed miss distance predicts whiffs best
 
@@ -119,7 +125,8 @@ issue this portfolio's other repos have measured.
 ```
 ep-pitch-recognition/
 |-- data/
-|   |-- swing_timing_season.csv
+|   |-- swing_timing_season.csv          (min 65/batter-pitch-type, 7 types — Findings 2-4)
+|   |-- swing_timing_season_min100.csv   (verified min 100/batter-pitch-type, 3 types — Finding 1)
 |   |-- swing_timing_monthly.csv
 |   `-- swing_timing_by_zone.csv
 |   `-- swing_timing_by_platoon.csv
@@ -145,9 +152,14 @@ python scripts/pitch_recognition_analysis.py
 ## Methodology
 
 - **Data source:** Baseball Savant Bat Tracking "Swing Timing" leaderboard,
-  2026 season, all seven publicly tracked pitch types (Four-Seam, Sinker,
-  Cutter, Slider, Changeup, Sweeper, Curveball). Minimum 100 swings per
-  player-pitch-type combination (built into the source export).
+  batter-level, 2026 season. **Finding 1** uses a verified 100-swing
+  minimum per batter-pitch-type combination, which only 3 pitch types
+  (Fastball, Curveball, Changeup) have enough qualifying batters to
+  support — see the Correction section below. **Findings 2-4** use an
+  export across all seven publicly tracked pitch types (Four-Seam,
+  Sinker, Cutter, Slider, Changeup, Sweeper, Curveball) whose actual
+  minimum is 65 swings per combination, not independently re-verified
+  at 100.
 - **Early/On Time/Late:** whether the bat's sweet spot arrived at the
   contact point before, at, or after the pitch, based on Statcast's
   bat-tracking data.
@@ -155,6 +167,32 @@ python scripts/pitch_recognition_analysis.py
   the point of closest approach.
 - **Correlation:** simple Pearson r between miss distance and whiff
   rate, computed separately within each pitch type.
+
+## Correction (posted after publication)
+
+An earlier version of Finding 1 reported a 1.3% fastball early-swing
+rate across all 7 tracked pitch types. That number came from a
+batter-level Baseball Savant export whose *actual* minimum was 65
+swings per batter-pitch-type combination — the README documented a
+100-swing minimum, but the export that produced the original numbers
+did not enforce it. This was flagged by a reader in the comments on
+the original post; it checked out on review.
+
+With a verified 100-swing minimum enforced (both in the source export
+and again in code), the fastball early-swing rate is **3.3%**, not
+1.3%. Curveball and Changeup — the two other pitch types with enough
+batter-level volume to clear a real 100-swing minimum — come in at
+42.3% and 46.4%. The core finding (swings are overwhelmingly late-only
+against fastballs and overwhelmingly early against off-speed/breaking
+pitches) holds; the specific fastball number and the "30-45x" headline
+ratio do not, and are corrected above. Sinker, Cutter, Slider, and
+Sweeper are no longer shown in this chart, for the volume reason
+explained in Finding 1.
+
+Findings 2-4 below still use the original min-65 dataset
+(`swing_timing_season.csv`) and have not been re-verified against a
+confirmed 100-swing threshold. Treat their exact percentages with the
+same caveat until re-checked.
 
 ## Limitations
 

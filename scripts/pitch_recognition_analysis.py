@@ -22,6 +22,15 @@ from ep_chart_style import *
 DATA_DIR = Path(__file__).parent.parent / "data"
 OUTPUT_DIR = Path(__file__).parent.parent / "outputs"
 
+# Finding 1 (early-swing bias) is restricted to the three pitch types that
+# actually sustain a real 100-swing-per-batter-pitch-type minimum in 2026.
+# Sinker/Cutter/Slider/Sweeper were dropped: at the batter level, too few
+# hitters reach 100 swings against a single one of those pitch types in a
+# season, so any "league rate" for them would be a small, non-representative
+# sample. See README "Correction" section for the full explanation.
+MIN100_PITCH_ORDER = ["FF", "CU", "CH"]
+# Full 7-type order, still used by Findings 2-4 (min65 dataset; unaffected by
+# the Finding 1 correction, but see README Limitations for the same caveat).
 PITCH_ORDER = ["SI", "FF", "FC", "ST", "SL", "CH", "CU"]
 PITCH_LABELS = {
     "FF": "Fastball", "SI": "Sinker", "FC": "Cutter",
@@ -32,18 +41,30 @@ PITCH_LABELS_ES = {
     "SL": "Slider", "CH": "Cambio", "ST": "Sweeper", "CU": "Curva",
 }
 
+MIN_SWINGS = 100
+
 
 def load_data():
     return pd.read_csv(DATA_DIR / "swing_timing_season.csv")
 
 
+def load_min100_data():
+    df = pd.read_csv(DATA_DIR / "swing_timing_season_min100.csv")
+    # Defense in depth: enforce the minimum in code too, don't just trust the export.
+    return df[df["n_swings"] >= MIN_SWINGS]
+
+
 def plot_early_bias(df: pd.DataFrame, lang: str) -> None:
-    fig, ax = plt.subplots(figsize=(11, 7.5))
+    fig, ax = plt.subplots(figsize=(9, 7.5))
     apply_ep_style(fig, ax)
 
     labels = PITCH_LABELS if lang == "en" else PITCH_LABELS_ES
-    x_labels = [labels[p] for p in PITCH_ORDER]
-    early_vals = [df[df["api_pitch_type"] == p]["early_percent"].mean() * 100 for p in PITCH_ORDER]
+    x_labels = [labels[p] for p in MIN100_PITCH_ORDER]
+    early_vals = []
+    for p in MIN100_PITCH_ORDER:
+        sub = df[df["api_pitch_group"] == p]
+        weighted = (sub["early_percent"] * sub["n_swings"]).sum() / sub["n_swings"].sum() * 100
+        early_vals.append(weighted)
 
     colors = [EP_COLORS["navy"] if v < 15 else EP_COLORS["gold"] if v < 30 else EP_COLORS["red"]
               for v in early_vals]
@@ -58,13 +79,13 @@ def plot_early_bias(df: pd.DataFrame, lang: str) -> None:
     if lang == "en":
         style_axis_label(ax, "y", "SWINGS ARRIVING EARLY (%)")
         add_finding_title(fig, ax, "Swings Are Fastball-Calibrated by Default",
-            "League-wide 2026 — 'Early' swing rate rises sharply as pitch speed/deception increases")
+            "League-wide 2026, min. 100 swings/batter-pitch-type — 3 pitch types with sufficient batter-level volume")
         add_source(fig, "Source: Baseball Savant Bat Tracking Swing Timing, 2026")
         fname = OUTPUT_DIR / "early_bias_EN.png"
     else:
         style_axis_label(ax, "y", "SWINGS QUE LLEGAN ADELANTADOS (%)")
         add_finding_title(fig, ax, "El Swing Está Calibrado por Default a Fastball",
-            "Liga completa 2026 — la tasa de swings 'adelantados' sube fuerte con menos velocidad/más quiebre")
+            "Liga completa 2026, mín. 100 swings/bateador-pitch-type — 3 tipos con volumen suficiente a nivel bateador")
         add_source(fig, "Fuente: Bat Tracking Swing Timing de Baseball Savant, 2026")
         fname = OUTPUT_DIR / "early_bias_ES.png"
 
@@ -212,16 +233,19 @@ def plot_platoon(lang: str) -> None:
 
 if __name__ == "__main__":
     df = load_data()
-    print(f"Filas totales: {len(df)}")
+    df_min100 = load_min100_data()
+    print(f"Filas totales (min65, 7 tipos): {len(df)}")
+    print(f"Filas min100 (3 tipos): {len(df_min100)}")
     print()
-    print("=== Early% por tipo de pitcheo ===")
-    for p in PITCH_ORDER:
-        sub = df[df["api_pitch_type"] == p]
-        print(f"  {p}: Early={sub['early_percent'].mean()*100:.1f}%, n={len(sub)}")
+    print("=== Early% por tipo de pitcheo (min 100, weighted by n_swings) ===")
+    for p in MIN100_PITCH_ORDER:
+        sub = df_min100[df_min100["api_pitch_group"] == p]
+        weighted = (sub["early_percent"] * sub["n_swings"]).sum() / sub["n_swings"].sum() * 100
+        print(f"  {p}: Early={weighted:.1f}%, n_players={len(sub)}, min_swings={sub['n_swings'].min():.0f}")
 
     print()
-    print("=== Correlación miss_distance vs whiff_rate ===")
-    for p in PITCH_ORDER:
+    print("=== Correlación miss_distance vs whiff_rate (Findings 2-4 still use min65 dataset) ===")
+    for p in ["SI", "FF", "FC", "ST", "SL", "CH", "CU"]:
         sub = df[df["api_pitch_type"] == p]
         if len(sub) > 10:
             r = sub["miss_distance"].corr(sub["whiff_rate"])
@@ -229,7 +253,7 @@ if __name__ == "__main__":
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     for lang in ["en", "es"]:
-        plot_early_bias(df, lang)
+        plot_early_bias(df_min100, lang)
         plot_miss_distance_vs_whiff(df, lang)
         plot_zone_breakdown(lang)
         plot_platoon(lang)

@@ -2,9 +2,15 @@
 
 **El timing del swing de un bateador está calibrado por default a la
 velocidad de fastball. A través de la liga en 2026, los swings llegan
-"adelantados" contra pitcheos lentos/con quiebre a 30-45x la tasa que
-llegan contra fastballs — y la magnitud de ese desajuste es un
+"adelantados" contra curveball y changeup a aproximadamente 13-14x la
+tasa que llegan contra fastballs — y la magnitud de ese desajuste es un
 predictor real y moderado de whiff rate.**
+
+> **Corrección (ver final de esta sección):** una versión anterior de
+> este README reportaba 1.3% de swing adelantado en fastball a través
+> de 7 tipos de pitcheo, sacado de un export a nivel bateador con un
+> mínimo real de 65 swings por combo bateador-pitch-type — no 100 como
+> decía el texto. Corregido abajo.
 
 Parte del portafolio analítico de [Emerson Performance](https://github.com/ejimenezperformance)
 (framework EP-TSP). Este es el primer proyecto de este portafolio en
@@ -27,22 +33,29 @@ timing mismo del bateador revela si identificó correctamente qué venía?
 
 ![Sesgo adelantado por tipo de pitcheo](outputs/early_bias_ES.png)
 
-| Tipo de Pitcheo | Tasa de Swing Adelantado |
-|---|---|
-| Fastball | 1.3% |
-| Sinker | 1.8% |
-| Cutter | 12.8% |
-| Slider | 37.2% |
-| Cambio | 43.4% |
-| Sweeper | 45.9% |
-| Curva | 49.0% |
+| Tipo de Pitcheo | Tasa de Swing Adelantado | Bateadores calificados (100+ swings) |
+|---|---|---|
+| Fastball | 3.3% | 325 |
+| Curva | 42.3% | 151 |
+| Cambio | 46.4% | 67 |
 
-Contra fastballs y sinkers — los pitcheos más rápidos y directos — los
-bateadores casi nunca llegan adelantados; cuando fallan el timing,
-llegan tarde. Contra cada tipo de pitcheo más lento y engañoso, eso se
-invierte dramáticamente: los bateadores llegan adelantados en
-aproximadamente 4 de cada 10 swings. Esto es consistente con que el
-swing de los bateadores va por default a un plan de timing calibrado a
+**Por qué solo 3 de 7 tipos:** con un mínimo real de 100 swings
+aplicado contra un *solo* tipo de pitcheo en una temporada, Sinker,
+Cutter, Slider y Sweeper no tienen suficientes bateadores calificados
+para sostener una tasa de liga confiable — la mayoría de bateadores
+simplemente no ve 100+ swings de un tipo de pitcheo específico
+(no-fastball, no-breaking) de distintos pitchers en una temporada. En
+vez de forzar esas 4 categorías con un umbral más laxo y sin
+documentar, se excluyen aquí. Los 3 tipos restantes sostienen el punto
+central: los bateadores casi nunca llegan adelantados contra fastball;
+contra pitcheos que requieren reconocer velocidad lenta, llegan
+adelantados en aproximadamente 4 de cada 10 swings.
+
+Contra fastballs — el pitcheo más rápido y directo — los bateadores
+casi nunca llegan adelantados; cuando fallan el timing, llegan tarde.
+Contra curveball y changeup, eso se invierte dramáticamente. Esto es
+consistente con que el swing de los bateadores va por default a un
+plan de timing calibrado a
 velocidad de fastball, que luego llega demasiado pronto cuando el
 pitcheo real es más lento.
 
@@ -122,7 +135,8 @@ repos de este portafolio han medido.
 ```
 ep-pitch-recognition/
 |-- data/
-|   |-- swing_timing_season.csv
+|   |-- swing_timing_season.csv          (mín 65/bateador-pitch-type, 7 tipos — Hallazgos 2-4)
+|   |-- swing_timing_season_min100.csv   (mín 100 verificado/bateador-pitch-type, 3 tipos — Hallazgo 1)
 |   |-- swing_timing_monthly.csv
 |   `-- swing_timing_by_zone.csv
 |   `-- swing_timing_by_platoon.csv
@@ -148,10 +162,15 @@ python scripts/pitch_recognition_analysis.py
 ## Metodología
 
 - **Fuente de datos:** leaderboard "Swing Timing" de Bat Tracking de
-  Baseball Savant, temporada 2026, los siete tipos de pitcheo
-  públicamente rastreados (Four-Seam, Sinker, Cutter, Slider, Changeup,
-  Sweeper, Curveball). Mínimo 100 swings por combinación
-  jugador-tipo-de-pitcheo (integrado en la exportación de la fuente).
+  Baseball Savant, a nivel bateador, temporada 2026. El **Hallazgo 1**
+  usa un mínimo verificado de 100 swings por combinación
+  bateador-tipo-de-pitcheo, que solo 3 tipos (Fastball, Curveball,
+  Changeup) tienen suficientes bateadores calificados para sostener —
+  ver la sección de Corrección abajo. Los **Hallazgos 2-4** usan un
+  export a través de los siete tipos de pitcheo públicamente
+  rastreados (Four-Seam, Sinker, Cutter, Slider, Changeup, Sweeper,
+  Curveball) cuyo mínimo real es 65 swings por combinación, no
+  re-verificado independientemente en 100.
 - **Early/On Time/Late:** si el punto dulce del bate llegó al punto de
   contacto antes, a tiempo, o después del pitcheo, basado en los datos
   de bat-tracking de Statcast.
@@ -159,6 +178,32 @@ python scripts/pitch_recognition_analysis.py
   pelota en el punto de aproximación más cercano.
 - **Correlación:** r de Pearson simple entre miss distance y whiff
   rate, calculado por separado dentro de cada tipo de pitcheo.
+
+## Corrección (publicada después de la publicación original)
+
+Una versión anterior del Hallazgo 1 reportaba 1.3% de swing adelantado
+en fastball a través de los 7 tipos de pitcheo rastreados. Ese número
+venía de un export a nivel bateador de Baseball Savant cuyo mínimo
+*real* era 65 swings por combo bateador-pitch-type — el README
+documentaba un mínimo de 100 swings, pero el export que produjo los
+números originales no lo aplicó. Esto lo señaló un lector en los
+comentarios del post original; se confirmó al revisarlo.
+
+Con un mínimo verificado de 100 swings aplicado (tanto en el export
+fuente como de nuevo en código), la tasa de swing adelantado en
+fastball es **3.3%**, no 1.3%. Curveball y Changeup — los otros dos
+tipos de pitcheo con suficiente volumen a nivel bateador para superar
+un mínimo real de 100 — dan 42.3% y 46.4%. El hallazgo central (los
+swings fallan casi exclusivamente tarde contra fastball y casi
+exclusivamente adelantados contra pitcheos lentos/con quiebre) se
+sostiene; el número específico de fastball y el titular de "30-45x" no,
+y se corrigen arriba. Sinker, Cutter, Slider y Sweeper ya no aparecen
+en este gráfico, por la razón de volumen explicada en el Hallazgo 1.
+
+Los Hallazgos 2-4 más abajo siguen usando el dataset original de
+min-65 (`swing_timing_season.csv`) y no se han re-verificado contra un
+umbral confirmado de 100 swings. Trata sus porcentajes exactos con la
+misma salvedad hasta que se revisen.
 
 ## Limitaciones
 
